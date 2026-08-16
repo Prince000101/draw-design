@@ -7,7 +7,7 @@ import { chromeBinary } from "./engines.js";
 import type { RecordOpts } from "./types.js";
 
 /** Convert an SVG file to PNG by rendering it in headless Chromium. */
-export async function svgToPng(svgPath: string, pngPath: string): Promise<string> {
+export async function svgToPng(svgPath: string, pngPath: string, timeSec?: number): Promise<string> {
   const exe = chromeBinary();
   if (!exe) throw new Error("no Chromium found");
   const browser = await chromium.launch({
@@ -19,6 +19,13 @@ export async function svgToPng(svgPath: string, pngPath: string): Promise<string
     const page = await browser.newPage();
     await page.goto("file://" + resolve(svgPath));
     await page.waitForSelector("svg");
+    if (timeSec !== undefined) {
+      await page.evaluate((t) => {
+        const s = document.querySelector("svg");
+        if (s && typeof s.setCurrentTime === "function") s.setCurrentTime(t);
+      }, timeSec);
+      await page.waitForTimeout(120);
+    }
     const size = await page.evaluate(() => {
       const s = document.querySelector("svg")!;
       return {

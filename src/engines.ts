@@ -95,6 +95,21 @@ export function engineStatuses(): EngineInfo[] {
       note: "built-in SMIL/CSS animated SVG generator (no binary needed)",
     },
     {
+      engine: "architecture",
+      available: true,
+      note: "C4 context/container generator (context, container levels)",
+    },
+    {
+      engine: "mindmap",
+      available: true,
+      note: "radial + tree mind map generator",
+    },
+    {
+      engine: "algorithm",
+      available: true,
+      note: "step-animated bars/cells algorithm visualizer",
+    },
+    {
       engine: "record",
       available: !!chrome,
       binary: chrome,

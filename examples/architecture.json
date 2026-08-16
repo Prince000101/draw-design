@@ -1,0 +1,18 @@
+{
+  "title": "pocketwire — system context",
+  "subtitle": "Prompt a coding agent from your phone",
+  "theme": "light",
+  "systems": [
+    { "id": "user", "name": "Mobile user", "kind": "person", "desc": "sends prompts and approves actions from the phone app" },
+    { "id": "pocketwire", "name": "pocketwire", "kind": "system", "desc": "relay server, approval queue and device app", "tech": "PWA" },
+    { "id": "adapter", "name": "opencode adapter", "kind": "external", "desc": "MCP bridge managing N agent sessions", "tech": "MCP" },
+    { "id": "agent", "name": "opencode", "kind": "external", "desc": "coding agent runtime with approval gates", "tech": "SSE" }
+  ],
+  "edges": [
+    { "from": "user", "to": "pocketwire", "label": "prompts & approvals", "tech": "HTTPS" },
+    { "from": "pocketwire", "to": "adapter", "label": "instructions", "tech": "MCP" },
+    { "from": "adapter", "to": "agent", "label": "prompt_async", "tech": "stdio" },
+    { "from": "agent", "to": "adapter", "label": "events", "tech": "SSE" },
+    { "from": "pocketwire", "to": "agent", "label": "session log", "tech": "WS" }
+  ]
+}

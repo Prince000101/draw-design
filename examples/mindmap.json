@@ -1,0 +1,38 @@
+{
+  "label": "pocketwire",
+  "children": [
+    {
+      "label": "Mobile app",
+      "note": "PWA + APK",
+      "children": [
+        { "label": "Chat UI", "note": "streaming replies" },
+        { "label": "Approvals", "note": "allow / deny" },
+        { "label": "Push", "note": "background events" }
+      ]
+    },
+    {
+      "label": "Relay server",
+      "note": "single tenant",
+      "children": [
+        { "label": "Queue", "note": "Redis backlog" },
+        { "label": "SSE fan-out", "note": "to device" }
+      ]
+    },
+    {
+      "label": "MCP adapter",
+      "note": "bridge",
+      "children": [
+        { "label": "Sessions", "note": "N agents" },
+        { "label": "Tools", "note": "permission hooks" }
+      ]
+    },
+    {
+      "label": "Agent runtime",
+      "note": "opencode",
+      "children": [
+        { "label": "Prompt loop" },
+        { "label": "Approval gates" }
+      ]
+    }
+  ]
+}
