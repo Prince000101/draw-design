@@ -1,4 +1,4 @@
-import { SvgDoc, canvasFor, circle, rect, textEl, stepFade, discrete, tween, reveal, truncate, esc } from "./svg.js";
+import { SvgDoc, canvasFor, circle, rect, textEl, stepWindow, tween, easedTransform, reveal, truncate, esc } from "./svg.js";
 import { ACCENT, themeOf } from "./theme.js";
 import type { ThemeName } from "./theme.js";
 
@@ -184,7 +184,7 @@ export function algoSvg(spec: AlgSpec): string {
     for (const p of s.pointers ?? []) {
       const idx = Math.max(0, Math.min(n - 1, p.index));
       const x = marginX + idx * slotW + slotW / 2;
-      pointerParts.push(`<g>${stepFade(STEP_DUR, k * STEP_DUR)}`);
+      pointerParts.push(`<g>${stepWindow(STEP_DUR, k, K)}`);
       pointerParts.push(`<path d="M ${x - 8} ${ptrY} L ${x + 8} ${ptrY} L ${x} ${ptrY - 14} Z" fill="${p.color}"/>`);
       if (p.label) pointerParts.push(textEl(x, ptrY - 20, p.label, { size: 11, weight: 700, fill: p.color, anchor: "middle", mono: true }));
       pointerParts.push("</g>");
@@ -212,14 +212,12 @@ export function algoSvg(spec: AlgSpec): string {
       }
       doc.add(`<g>${reveal(0.15 + i * 0.03)}`);
       doc.add(`<rect x="${x}" y="${cellY}" width="${cellW}" height="${cellH}" rx="10" stroke-width="2">`);
-      doc.add(discrete("fill", fills, T));
-      doc.add(discrete("stroke", strokes, T));
-      doc.add(`<animateTransform attributeName="transform" type="translate" values="${orders
-        .map((o) => (o[i] - i) * slotW)
-        .join(";")}" dur="${T}s" repeatCount="indefinite"/>`);
+      doc.add(tween("fill", fills, T));
+      doc.add(tween("stroke", strokes, T));
+      doc.add(easedTransform(orders.map((o) => (o[i] - i) * slotW), T));
       doc.add("</rect>");
-      doc.add(`<text x="${x + cellW / 2}" y="${cellY + cellH / 2 + 5}" text-anchor="middle" font-size="${n > 12 ? 12 : 16}" font-weight="700" font-family="monospace">`);
-      doc.add(discrete("fill", texts, T));
+      doc.add(`<text x="${x + cellW / 2}" y="${cellY + cellH / 2 + 5}" text-anchor="middle" font-size="${n > 12 ? 12 : 16}" font-weight="700" font-family="monospace" paint-order="stroke" stroke="${theme.fg}" stroke-width="1.5">`);
+      doc.add(tween("fill", texts, T));
       doc.add(`${esc(states[0][i])}</text>`);
       doc.add("</g>");
     }
@@ -232,14 +230,14 @@ export function algoSvg(spec: AlgSpec): string {
       const fills: string[] = [];
       for (let k = 0; k < K; k++) fills.push(posColor(steps, k, i));
       const dxs = orders.map((o) => (o[i] - i) * slotW);
+      const labelInside = hh >= 34;
       doc.add(`<g>${reveal(0.15 + i * 0.03)}`);
       doc.add(`<g>`);
-      doc.add(`<animateTransform attributeName="transform" type="translate" values="${dxs.join(";")}" dur="${T}s" repeatCount="indefinite"/>`);
+      doc.add(easedTransform(dxs, T));
       doc.add(`<rect x="${x}" y="${y}" width="${barW}" height="${hh}" rx="6">`);
-      doc.add(discrete("fill", fills, T));
+      doc.add(tween("fill", fills, T));
       doc.add("</rect>");
-      doc.add(`<text x="${x + barW / 2}" y="${y - 10}" text-anchor="middle" font-size="${n > 12 ? 10 : 13}" font-weight="700" font-family="monospace">`);
-      doc.add(discrete("fill", fills, T));
+      doc.add(`<text x="${x + barW / 2}" y="${labelInside ? y + hh / 2 + 4 : y - 8}" text-anchor="middle" font-size="${n > 12 ? 11 : 13}" font-weight="700" font-family="monospace" fill="#ffffff" paint-order="stroke" stroke="#0b1220" stroke-width="2">`);
       doc.add(`${esc(v)}</text>`);
       doc.add("</g>");
       doc.add("</g>");
@@ -249,7 +247,7 @@ export function algoSvg(spec: AlgSpec): string {
   // --- captions per step ---
   const capY = h - 44;
   for (let k = 0; k < K; k++) {
-    doc.add(`<g>${stepFade(STEP_DUR, k * STEP_DUR)}`);
+    doc.add(`<g>${stepWindow(STEP_DUR, k, K)}`);
     doc.add(textEl(w / 2, capY, `${k + 1} / ${K} · ${steps[k].label ?? ""}`, { size: 14, weight: 600, fill: theme.fg, anchor: "middle" }));
     doc.add("</g>");
   }

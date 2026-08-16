@@ -1,6 +1,6 @@
 {
   "name": "draw-design",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "MCP server that lets coding agents render diagrams and generate animated SVGs, GIFs and MP4s. C4 architecture, mind maps, algorithm animations and data-flow diagrams.",

@@ -226,9 +226,9 @@ server.registerTool(
 server.registerTool(
   "animate_algorithm",
   {
-    title: "Generate a step-animated algorithm visualization",
+    title: "Generate a step-animated algorithm visualization (SVG or manim MP4)",
     description:
-      "Creates a step-animated SVG visualizing an algorithm over an array. kind 'bars' animates a bubble sort (pass values, or preset steps); kind 'cells' animates a binary search over sorted values (pass values + target). For full control pass explicit steps: [{ state?, compare?, swap?, done?, focus?, pointers?, order?, label? }]. Outputs a consistent 16:9 SVG (or PNG); optionally record to GIF/MP4.",
+      "Creates a step-animated visualization of an algorithm over an array. Engine 'smil' (default) produces a self-playing SVG (kind 'bars' animates a bubble sort, kind 'cells' a binary search; pass explicit steps for full control) and can be recorded to GIF/MP4. Engine 'manim' renders a buttery-smooth MP4 via the manim Python library (3b1b) at 1280x720; it ignores 'steps' and requires manim installed (see README).",
     inputSchema: {
       kind: z.enum(["bars", "cells"]).default("bars"),
       values: z.array(z.number()).min(1),
@@ -236,18 +236,22 @@ server.registerTool(
       target: z.number().optional(),
       title: z.string().optional(),
       subtitle: z.string().optional(),
+      engine: z.enum(["smil", "manim"]).default("smil"),
+      quality: z.enum(["ql", "qm", "qh", "qp"]).default("qm"),
       ...genCommon,
     },
   },
   async (args) => {
     try {
-      const { kind, values, steps, target, title, subtitle, aspect, width, height, theme, format, outDir, name, record, seconds, fps, videoFormat } = args as Record<string, unknown> & {
+      const { kind, values, steps, target, title, subtitle, engine, quality, aspect, width, height, theme, format, outDir, name, record, seconds, fps, videoFormat } = args as Record<string, unknown> & {
         kind?: "bars" | "cells";
         values: number[];
         steps?: AlgStep[];
         target?: number;
         title?: string;
         subtitle?: string;
+        engine?: "smil" | "manim";
+        quality?: "ql" | "qm" | "qh" | "qp";
         aspect?: string;
         width?: number;
         height?: number;
@@ -260,6 +264,33 @@ server.registerTool(
         fps: number;
         videoFormat: "gif" | "mp4";
       };
+      const nm = baseName(name, "algorithm");
+
+      if (engine === "manim") {
+        const { renderManimScene, manimAvailable } = await import("./manim.js");
+        if (!manimAvailable()) {
+          throw new Error(
+            "manim is not installed. Set up a venv and install it:\n" +
+              "  python3 -m venv ~/.venvs/manim\n" +
+              "  ~/.venvs/manim/bin/pip install manim\n" +
+              "or set MANIM_BIN to the manim executable.",
+          );
+        }
+        const res = await renderManimScene(
+          { kind: kind ?? "bars", values, target, title: title ?? undefined, quality },
+          outDir,
+          nm,
+        );
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ ok: true, path: res.out, format: "mp4", engine: "manim", quality: res.quality }),
+            },
+          ],
+        };
+      }
+
       const spec: AlgSpec = {
         kind: kind ?? "bars",
         values,
@@ -274,7 +305,6 @@ server.registerTool(
       };
       const effective = steps ?? (kind === "cells" ? binarySearchSteps(values, target ?? 0) : bubbleSortSteps(values));
       const svg = algoSvg(spec);
-      const nm = baseName(name, "algorithm");
       const midTime = (effective.length / 2) * 1.0;
       const emit = await emitSvg(svg, outDir, nm, format as "svg" | "png", format === "png" ? midTime : undefined);
       let videoPath: string | undefined;
@@ -291,7 +321,7 @@ server.registerTool(
         content: [
           {
             type: "text",
-            text: JSON.stringify({ ok: true, ...emit, videoPath, kind: kind ?? "bars", steps: effective.length }),
+            text: JSON.stringify({ ok: true, ...emit, videoPath, engine: "smil", kind: kind ?? "bars", steps: effective.length }),
           },
         ],
       };

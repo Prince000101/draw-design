@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { engineStatuses } from "./engines.js";
-import { renderD2Animated, renderFile } from "./render.js";
+import { renderFile } from "./render.js";
 import { animateDataflow, defaultFlow, writeAnimatedSvg } from "./animate.js";
 import { recordSvgAnimation } from "./record.js";
 import { buildGallery } from "./gallery.js";
@@ -43,6 +43,8 @@ COMMANDS
   algorithm [preset]               generate an algorithm animation
     preset: sort | search          (default: sort)
     --values "7,2,9,1" --target <n> --kind bars|cells
+    --engine smil|manim           (default: smil; manim -> smooth MP4 via 3b1b)
+    --quality ql|qm|qh|qp         manim render quality (default: qm = 720p)
     --title <text> --aspect/--theme/--format/--out/--name/--record ...
   animate [file.json]              generate animated data-flow SVG
     --title <text> --width <px> (default: 1280) --out <dir>
@@ -56,7 +58,7 @@ EXAMPLES
   npm run diagram -- arch --level container --out examples/out
   npm run diagram -- mindmap --layout tree --format png --out examples/out
   npm run diagram -- algorithm sort --values "7,2,9,1,5" --record gif --out examples/out
-  npm run diagram -- animate examples/data-flow.json --gif --out examples/out
+  npm run diagram -- algorithm sort --engine manim --out examples/out
 `;
 
 function argsOf(argv: string[]) {
@@ -171,6 +173,22 @@ async function cmdAlgorithm(opts: Record<string, string>, rest: string[]) {
   }
   if (opts.kind) spec.kind = opts.kind as "bars" | "cells";
   if (opts.title) spec.title = opts.title;
+  const outDir = opts.out ?? ".";
+  const name = opts.name ?? `algorithm-${spec.kind ?? "bars"}`;
+
+  if (opts.engine === "manim") {
+    const { renderManimScene } = await import("./manim.js");
+    const quality = (["ql", "qm", "qh", "qp"] as const).includes(opts.quality as never)
+      ? (opts.quality as "ql" | "qm" | "qh" | "qp")
+      : "qm";
+    const res = await renderManimScene(
+      { kind: spec.kind ?? "bars", values: spec.values, target: spec.target, title: spec.title, quality },
+      outDir,
+      name,
+    );
+    console.log(`  mp4: ${res.out}`);
+    return;
+  }
 
   const effective =
     spec.steps ?? (spec.kind === "cells" ? binarySearchSteps(spec.values, spec.target ?? 0) : bubbleSortSteps(spec.values));
@@ -181,8 +199,6 @@ async function cmdAlgorithm(opts: Record<string, string>, rest: string[]) {
     width: opts.width ? Number(opts.width) : undefined,
     height: opts.height ? Number(opts.height) : undefined,
   });
-  const outDir = opts.out ?? ".";
-  const name = opts.name ?? `algorithm-${spec.kind ?? "bars"}`;
   const fmt = opts.format ?? "svg";
   const midTime = (effective.length / 2) * 1.0;
   if (fmt === "all") {
@@ -233,21 +249,12 @@ async function cmdDemo(outDir: string) {
   console.log("== algorithm (binary search) ==");
   await cmdAlgorithm({ out, format: "all", values: sampleSearchSpec().values.join(","), target: "9", kind: "cells" }, ["search"]);
 
-  console.log("== data flow (graphviz / d2 / animated) ==");
-  const dot = await renderFile("graphviz", "examples/data-flow.dot", "png", out, "data-flow-graphviz");
-  console.log("  graphviz png:", dot);
-  const d2 = await renderFile("d2", "examples/data-flow.d2", "png", out, "data-flow-d2");
-  console.log("  d2 png:", d2);
-  const boards = await renderD2Animated(readFileSync("examples/boards.d2", "utf8"), out, 900, "data-flow-boards-animated");
-  console.log("  d2 step-reveal animated svg:", boards);
-  const { nodes, steps } = defaultFlow();
-  const svgPath = writeAnimatedSvg(nodes, steps, out, "data-flow-animated", {
-    title: "pocketwire — prompt + approval round trip",
-    width: 1280,
-  });
-  console.log("  animated svg:", svgPath);
-  const rec = await recordSvgAnimation(svgPath, join(out, "data-flow.gif"), { seconds: 8, fps: 15, format: "gif" });
-  console.log("  gif:", rec.out);
+  const { manimAvailable } = await import("./manim.js");
+  if (manimAvailable()) {
+    console.log("== algorithm (manim MP4, 720p) ==");
+    await cmdAlgorithm({ out, engine: "manim", name: "algorithm-sort" }, ["sort"]);
+    await cmdAlgorithm({ out, engine: "manim", name: "algorithm-search", values: sampleSearchSpec().values.join(","), target: "9", kind: "cells" }, ["search"]);
+  }
 
   console.log("== gallery ==");
   console.log("  gallery:", buildGallery(out));

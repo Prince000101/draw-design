@@ -269,7 +269,44 @@ export function tween(
   return `<animate attributeName="${attribute}" values="${values.join(";")}" dur="${dur}s" begin="${begin}s" calcMode="linear" repeatCount="indefinite"/>`;
 }
 
+/**
+ * Eased translate transform across timeline values (steps). Uses spline
+ * interpolation so elements ease in and out instead of moving at constant
+ * speed; values are evenly spaced across the duration.
+ */
+export function easedTransform(
+  values: number[],
+  dur: number,
+  begin = 0,
+  spline = "0.45 0 0.25 1",
+): string {
+  const ks = values.length > 1 ? ` keySplines="${Array(values.length - 1).fill(spline).join(";")}"` : "";
+  return `<animateTransform attributeName="transform" type="translate" values="${values.join(";")}" dur="${dur}s" begin="${begin}s" calcMode="spline"${ks} repeatCount="indefinite"/>`;
+}
+
+/** Contrast text color (dark on light fills, white on dark fills). */
+export function textOn(fill: string): string {
+  const m = fill.replace("#", "");
+  const r = parseInt(m.slice(0, 2), 16);
+  const g = parseInt(m.slice(2, 4), 16);
+  const b = parseInt(m.slice(4, 6), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6 ? "#0b1220" : "#ffffff";
+}
+
 /** Step-window fade for captions/pointers: visible mid-step, looping. */
 export function stepFade(stepDur: number, beginS: number): string {
   return `<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.14;0.86;1" dur="${stepDur}s" begin="${beginS.toFixed(2)}s" repeatCount="indefinite"/>`;
+}
+
+/**
+ * Absolute-window fade for a specific step of a fixed-step timeline. Unlike
+ * `stepFade` it never sits "not started" before its begin time, so late steps
+ * don't render at full opacity before the timeline reaches them.
+ */
+export function stepWindow(stepDur: number, stepIdx: number, totalSteps: number): string {
+  const T = totalSteps * stepDur;
+  const a = (stepIdx * stepDur + stepDur * 0.14) / T;
+  const b = (stepIdx * stepDur + stepDur * 0.86) / T;
+  const r = 0.008;
+  return `<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;${a.toFixed(4)};${Math.min(1, a + r).toFixed(4)};${b.toFixed(4)};${Math.min(1, b + r).toFixed(4)};1" dur="${T}s" repeatCount="indefinite"/>`;
 }

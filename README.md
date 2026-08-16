@@ -1,6 +1,6 @@
 # draw-design
 
-An **MCP server** that lets coding agents (opencode, Claude Code, …) generate **design-quality diagrams and animations** — C4 architecture diagrams, mind maps, step-animated algorithm visualizations and data-flow diagrams — as self-contained SVGs, GIFs and MP4s. Every generator outputs a consistent **16:9 (1280×720)** canvas by default, so images and videos look uniform in READMEs, docs and slides.
+An **MCP server** that lets coding agents (opencode, Claude Code, …) generate **design-quality diagrams and animations** — C4 architecture diagrams, mind maps and step-animated algorithm visualizations (plus Graphviz/D2 rendering) — as self-contained SVGs, GIFs and MP4s. Every generator outputs a consistent **16:9 (1280×720)** canvas by default, so images and videos look uniform in READMEs, docs and slides. Algorithm animations come in two flavors: smooth **SMIL** in-browser animation, or high-fidelity **MP4** rendered with [manim](https://github.com/3b1b/manim).
 
 ## Generators
 
@@ -8,7 +8,7 @@ An **MCP server** that lets coding agents (opencode, Claude Code, …) generate 
 |------|------------------|
 | `generate_architecture` | **C4-style architecture diagrams** (context / container levels) with person, system, database, queue and external-system shapes, color-coded per C4 conventions |
 | `generate_mindmap` | **Radial** (root-centered, color-coded rings) or **left-right tree** mind maps from a nested model |
-| `animate_algorithm` | **Step-animated algorithm visualizations** — bubble sort as sliding bars, binary search with `lo`/`mid`/`hi` pointers, or your own step script |
+| `animate_algorithm` | **Step-animated algorithm visualizations** — bubble sort as sliding bars, binary search with `lo`/`mid`/`hi` pointers, or your own step script. `engine: "manim"` renders a buttery-smooth **MP4** via the [3b1b manim](https://github.com/3b1b/manim) Python library |
 | `animate_dataflow` | Self-playing **animated SVG** with travelling packets between nodes |
 | `render_diagram` | Graphviz **DOT** or **D2** source → SVG / PNG |
 | `record_svg_animation` | Sweep any animated SVG's timeline in headless Chromium and encode with ffmpeg |
@@ -53,17 +53,23 @@ Left-right tree layout:
 
 ### Algorithm animations
 
-Bubble sort — bars slide into place, colors mark compare / swap / sorted:
+Bubble sort — bars slide into place with eased motion, colors blend smoothly to mark compare / swap / sorted:
 
 <img src="docs/screenshots/algorithm-sort.png" width="900" alt="bubble sort bars" style="border-radius:10px;border:1px solid #e2e8f0"/>
 
 <img src="docs/screenshots/algorithm-sort.gif" width="900" alt="bubble sort animation" style="border-radius:10px;border:1px solid #e2e8f0"/>
+
+Same model rendered to **MP4 with manim** (`--engine manim`):
+
+<video src="docs/screenshots/algorithm-sort.mp4" width="900" controls playsinline muted style="border-radius:10px;border:1px solid #e2e8f0"></video>
 
 Binary search — `lo` / `mid` / `hi` pointers sweep the array:
 
 <img src="docs/screenshots/algorithm-search.png" width="900" alt="binary search cells" style="border-radius:10px;border:1px solid #e2e8f0"/>
 
 <img src="docs/screenshots/algorithm-search.gif" width="900" alt="binary search animation" style="border-radius:10px;border:1px solid #e2e8f0"/>
+
+<video src="docs/screenshots/algorithm-search.mp4" width="900" controls playsinline muted style="border-radius:10px;border:1px solid #e2e8f0"></video>
 
 ---
 
@@ -82,8 +88,9 @@ npm run diagram -- list-engines
 | **Graphviz** `dot` | `.dot`/`.gv` → SVG/PNG | `apt install graphviz` (or brew/dnf) |
 | **D2** | `.d2` → SVG/PNG + step-reveal animation | `curl -fsSL https://d2lang.com/install.sh \| sh -s --` |
 | **Chromium + ffmpeg** | PNG rasterization, GIF/MP4 recording | reuse cached Playwright Chromium or `npx playwright install chromium`; `apt install ffmpeg` |
+| **manim** (3b1b) | `--engine manim` algorithm MP4s (720p+) | `python3 -m venv ~/.venvs/manim && ~/.venvs/manim/bin/pip install manim` (requires `libcairo2-dev libpango1.0-dev` on Debian/Ubuntu). Set `MANIM_BIN` to point at a custom venv |
 
-The architecture / mind map / algorithm generators are **built-in** — they need no binaries at all.
+The architecture / mind map / algorithm generators are **built-in** — the SMIL engine needs no binaries at all.
 
 ---
 
@@ -100,16 +107,14 @@ npm run diagram -- arch --level container --theme dark --format png --record gif
 npm run diagram -- mindmap --out examples/out --format png
 npm run diagram -- mindmap --layout tree --format png --out examples/out
 
-# Algorithm animations
+# Algorithm animations (SMIL SVG → PNG/GIF, or manim MP4)
 npm run diagram -- algorithm sort   --values "7,2,9,1,5,3,8,4,6" --format png --out examples/out
 npm run diagram -- algorithm search --values "1,3,5,7,9,11,13,15" --target 9 --record gif --out examples/out
-
-# data-flow + GIF
-npm run diagram -- animate examples/data-flow.json --gif --out examples/out
+npm run diagram -- algorithm sort   --engine manim --quality qm --out examples/out
 
 # render DOT / D2 sources
-npm run diagram -- render graphviz examples/data-flow.dot --out examples/out --format all
-npm run diagram -- render d2 examples/data-flow.d2 --out examples/out
+npm run diagram -- render graphviz my-flow.dot --out examples/out --format all
+npm run diagram -- render d2 my-flow.d2 --out examples/out
 
 # everything + gallery.html
 npm run diagram -- demo
@@ -140,7 +145,7 @@ Register the server in your agent config, e.g. for opencode (`~/.config/opencode
 |------|---------------|--------|
 | `generate_architecture` | `model` (JSON: `systems[]`, `edges[]`), `level` (`context`\|`container`), `theme`, `aspect`, `format`, `outDir`, `name`, `record` | SVG / PNG path (+ GIF/MP4) |
 | `generate_mindmap` | `root` (nested `{label, note?, color?, children?}`), `layout` (`radial`\|`tree`), `title`, `theme`, `aspect`, `format`, `outDir`, `record` | SVG / PNG path (+ GIF/MP4) |
-| `animate_algorithm` | `kind` (`bars`\|`cells`), `values[]`, `steps?`, `target?`, `title`, `theme`, `aspect`, `format`, `outDir`, `record` | SVG / PNG path (+ GIF/MP4) |
+| `animate_algorithm` | `kind` (`bars`\|`cells`), `values[]`, `steps?`, `target?`, `engine` (`smil`\|`manim`), `quality` (`ql`\|`qm`\|`qh`\|`qp`), `title`, `theme`, `aspect`, `format`, `outDir`, `record` | SVG / PNG path, or MP4 for manim (+ GIF/MP4 via `record`) |
 | `animate_dataflow` | `nodes[]`, `steps[]`, `title?`, `width`, `outDir`, `name`, `record` | animated SVG path (+ GIF/MP4) |
 | `render_diagram` | `engine` (`graphviz`\|`d2`), `source` or `sourceFile`, `format`, `outDir`, `name` | rendered file path |
 | `record_svg_animation` | `svgPath`, `outPath?`, `seconds`, `fps`, `format?` | recorded GIF/MP4 path |
@@ -185,7 +190,7 @@ Kinds: `person` · `system` · `container` · `database` · `queue` · `external
 
 ### Input format for `animate_algorithm`
 
-Presets: omit `steps` — `bars` runs a bubble sort, `cells` a binary search (`target` required). Or pass explicit steps for full control:
+Presets: omit `steps` — `bars` runs a bubble sort, `cells` a binary search (`target` required). Or pass explicit steps for full control. Set `engine: "manim"` to render with manim instead of SMIL — the manim backend uses the same model but expresses it as smooth Python animations (a `swap` step becomes a real 3B1B-style `Swap()` tween); `quality` maps to manim's `ql`/`qm`/`qh`/`qp` presets (`qm` = 720p).
 
 ```json
 {
@@ -208,8 +213,8 @@ Step fields: `state` (full array), `compare` `[i,j]`, `swap` (bool), `done` / `f
 
 1. **SMIL, not JavaScript** — everything runs on the SVG timeline (`setCurrentTime()`), so frames are deterministic and recordable frame-by-frame to GIF/MP4.
 2. **Staged reveals** — architecture and mind map elements fade in on a staggered timeline.
-3. **Discrete fills + linear transforms** — algorithm bars slide between positions (`<animateTransform>`) while highlight colors change discretely per step (`<animate attributeName="fill" calcMode="discrete">`).
-4. **D2 step-reveal** — multi-board D2 sources rendered with `--animate-interval` (see `examples/boards.d2`).
+3. **Tweened fills + spline-eased transforms** — algorithm bars slide between positions with a cubic-bezier easing (`keySplines`), and highlight colors interpolate smoothly each step (`<animate attributeName="fill" calcMode="linear">`). Bars and cells show their current value with a white-on-rim label so state stays legible during motion.
+4. **Manim MP4 (optional)** — the same bubble sort / binary search model is regenerated as a 3B1B-style scene (compare/swap/lock with `Swap()` tweens and `lo`/`mid`/`hi` pointer triangles) and rendered to H.264 MP4 by manim.
 5. **Recording** — headless Chromium screenshots frames while advancing the timeline; ffmpeg encodes the palette GIF or H.264 MP4.
 
 ## Design system

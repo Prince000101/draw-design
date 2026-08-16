@@ -3,6 +3,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { EngineInfo } from "./types.js";
+import { manimBinary } from "./manim.js";
 
 function which(cmd: string): string | undefined {
   try {
@@ -107,7 +108,13 @@ export function engineStatuses(): EngineInfo[] {
     {
       engine: "algorithm",
       available: true,
-      note: "step-animated bars/cells algorithm visualizer",
+      note: "step-animated bars/cells algorithm visualizer (SMIL)",
+    },
+    {
+      engine: "manim",
+      available: !!manimBinary(),
+      binary: manimBinary(),
+      note: "manim (3b1b) Python renderer -> smooth 16:9 MP4 (720p+)",
     },
     {
       engine: "record",

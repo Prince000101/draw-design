@@ -57,8 +57,8 @@ function flatten(root: MindMapNode): FlatNode[] {
 }
 
 function header(doc: SvgDoc, title: string): void {
-  doc.add(textEl(40, 46, title, { size: 24, weight: 700, fill: doc.theme.fg }));
-  doc.add(textEl(40, 70, "concept map", { size: 13, fill: doc.theme.muted }));
+  doc.add(textEl(40, 46, title, { size: 22, weight: 700, fill: doc.theme.fg, letterSpacing: 0.2 }));
+  doc.add(textEl(40, 70, "concept map", { size: 12.5, fill: doc.theme.muted }));
 }
 
 function footer(doc: SvgDoc, nodes: FlatNode[], layout: string): void {
@@ -78,7 +78,7 @@ function radial(root: FlatNode, all: FlatNode[], w: number, h: number): Map<stri
   const cy = h / 2;
   const maxDepth = Math.max(...all.map((n) => n.depth));
   const usable = Math.min(h / 2 - 120, w / 2 - 140);
-  const step = maxDepth > 0 ? Math.max(56, Math.min(150, usable / maxDepth)) : 0;
+  const step = maxDepth > 0 ? Math.max(66, Math.min(150, usable / maxDepth)) : 0;
   const R0 = 100;
 
   const positions = new Map<string, { x: number; y: number; angle: number }>();
@@ -155,20 +155,20 @@ function drawRadial(doc: SvgDoc, root: FlatNode, all: FlatNode[], w: number, h: 
     const leaf = n.children.length === 0;
     const begin = 0.25 + n.depth * 0.06;
     if (isRoot) {
-      const bw = Math.max(120, n.label.length * 9 + 44);
+      const bw = Math.max(120, n.label.length * 8.6 + 44);
       nodeParts.push(`<g>${reveal(begin)}`);
       nodeParts.push(rect(pos.x - bw / 2, pos.y - 24, bw, 48, { fill: doc.theme.bg, stroke: n.color, sw: 2, rx: 12, filter: doc.shadowId }));
-      nodeParts.push(textEl(pos.x, pos.y + 5, truncate(n.label, 26), { size: 14, weight: 700, fill: n.color, anchor: "middle" }));
+      nodeParts.push(textEl(pos.x, pos.y + 5, truncate(n.label, 26), { size: 13.5, weight: 700, fill: n.color, anchor: "middle" }));
       nodeParts.push("</g>");
     } else {
       const dir = Math.cos(pos.angle) >= 0 ? 1 : -1;
-      const lx = pos.x + dir * 16;
+      const lx = pos.x + dir * 18;
       nodeParts.push(`<g>${reveal(begin)}`);
       nodeParts.push(circle(pos.x, pos.y, leaf ? 5 : 7, { fill: n.color, stroke: doc.theme.bg, sw: 2 }));
       const color = n.depth === 1 ? n.color : leaf ? doc.theme.muted : doc.theme.fg;
       const weight = n.depth === 1 ? 700 : 400;
-      const size = n.depth === 1 ? 13 : leaf ? 11.5 : 12.5;
-      nodeParts.push(textEl(lx, pos.y + 4, truncate(n.label, 24), { size, weight, fill: color, anchor: dir > 0 ? "start" : "end" }));
+      const size = n.depth === 1 ? 12.5 : leaf ? 11 : 12;
+      nodeParts.push(textEl(lx, pos.y + 4, truncate(n.label, 20), { size, weight, fill: color, anchor: dir > 0 ? "start" : "end" }));
       nodeParts.push("</g>");
     }
   }
@@ -177,10 +177,10 @@ function drawRadial(doc: SvgDoc, root: FlatNode, all: FlatNode[], w: number, h: 
 
 function treeLayout(root: FlatNode, all: FlatNode[], w: number, h: number): Map<string, { x: number; y: number }> {
   const maxDepth = Math.max(...all.map((n) => n.depth));
-  const xStep = maxDepth > 0 ? Math.min(280, (w - 320) / maxDepth) : 0;
+  const xStep = maxDepth > 0 ? Math.min(300, (w - 360) / maxDepth) : 0;
   const positions = new Map<string, { x: number; y: number }>();
   const leaves = all.filter((n) => n.children.length === 0);
-  const slot = leaves.length > 1 ? (h - 260) / (leaves.length - 1) : 0;
+  const slot = leaves.length > 1 ? (h - 280) / (leaves.length - 1) : 0;
   let leafIdx = 0;
 
   const assignY = (n: FlatNode): number => {
@@ -201,8 +201,8 @@ function treeLayout(root: FlatNode, all: FlatNode[], w: number, h: number): Map<
 
 function drawTree(doc: SvgDoc, root: FlatNode, all: FlatNode[], w: number, h: number): void {
   const positions = treeLayout(root, all, w, h);
-  const bw = 236;
-  const bh = 66;
+  const bw = 252;
+  const bh = 72;
 
   for (const n of all) {
     if (!n.parent) continue;
@@ -234,11 +234,11 @@ function drawTree(doc: SvgDoc, root: FlatNode, all: FlatNode[], w: number, h: nu
     const lines = wrapLines(n.label, 26, 2);
     const hasNote = !!n.note && lines.length < 2;
     if (hasNote) {
-      doc.add(textEl(pos.x + 14, pos.y - 6, truncate(lines[0], 24), { size: 13, weight: 700, fill: n.color }));
-      doc.add(textEl(pos.x + 14, pos.y + 14, truncate(n.note!, 30), { size: 10.5, fill: doc.theme.muted }));
+      doc.add(textEl(pos.x + 14, pos.y - 7, truncate(lines[0], 24), { size: 12.5, weight: 700, fill: n.color }));
+      doc.add(textEl(pos.x + 14, pos.y + 15, truncate(n.note!, 30), { size: 10, fill: doc.theme.muted }));
     } else {
-      doc.add(textEl(pos.x + 14, pos.y + (lines.length === 2 ? -4 : 5), truncate(lines[0], 26), { size: 13, weight: 700, fill: n.color }));
-      if (lines[1]) doc.add(textEl(pos.x + 14, pos.y + 15, truncate(lines[1], 26), { size: 10.5, fill: doc.theme.muted }));
+      doc.add(textEl(pos.x + 14, pos.y + (lines.length === 2 ? -4 : 5), truncate(lines[0], 26), { size: 12.5, weight: 700, fill: n.color }));
+      if (lines[1]) doc.add(textEl(pos.x + 14, pos.y + 16, truncate(lines[1], 26), { size: 10, fill: doc.theme.muted }));
     }
     doc.add("</g>");
   }
