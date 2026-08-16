@@ -1,0 +1,101 @@
+title: pocketwire — prompt + approval round trip
+
+vars: {
+  d2-config: {
+    layout-engine: dagre
+    theme-id: 0
+  }
+}
+
+direction: right
+
+Phone: {
+  shape: rectangle
+  label: Phone
+  sub: PWA + APK
+  style: {
+    fill: "#dbeafe"
+    stroke: "#2563eb"
+    border-radius: 8
+  }
+}
+
+Pair: {
+  shape: rectangle
+  label: Pair link + QR
+  sub: HTTP · SSE
+  style: {
+    fill: "#fef3c7"
+    stroke: "#d97706"
+    border-radius: 8
+  }
+}
+
+Relay: {
+  shape: rectangle
+  label: Relay
+  sub: server + core
+  style: {
+    fill: "#d1fae5"
+    stroke: "#059669"
+    border-radius: 8
+  }
+}
+
+Adapter: {
+  shape: rectangle
+  label: Adapter
+  sub: opencode ×N
+  style: {
+    fill: "#d1fae5"
+    stroke: "#059669"
+    border-radius: 8
+  }
+}
+
+Agent: {
+  shape: rectangle
+  label: Agent
+  sub: opencode serve
+  style: {
+    fill: "#e2e8f0"
+    stroke: "#475569"
+    border-radius: 8
+  }
+}
+
+Phone -> Pair: {
+  label: scan QR / pair
+  style: {
+    stroke: "#f59e0b"
+  }
+}
+
+Pair -> Relay: {
+  label: SSE + HTTP
+  style: {
+    stroke: "#059669"
+  }
+}
+
+Relay -> Adapter: {
+  label: route by agent
+  style: {
+    stroke: "#059669"
+  }
+}
+
+Adapter -> Agent: {
+  label: prompt_async / events
+  style: {
+    stroke: "#059669"
+  }
+}
+
+Phone -> Relay: {
+  label: POST prompt
+  style: {
+    stroke: "#f59e0b"
+    stroke-dash: 5
+  }
+}

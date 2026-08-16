@@ -1,0 +1,32 @@
+{
+  "name": "draw-design",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP server that lets coding agents render diagrams and generate animated SVGs, GIFs and MP4s.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "./src/index.ts",
+  "bin": {
+    "draw-design": "./src/index.ts"
+  },
+  "scripts": {
+    "diagram": "tsx src/cli.ts",
+    "start": "tsx src/index.ts",
+    "record": "tsx src/cli.ts record",
+    "typecheck": "tsc --noEmit",
+    "examples": "tsx src/cli.ts demo"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "playwright": "^1.49.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

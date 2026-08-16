@@ -1,0 +1,28 @@
+digraph data_flow {
+  rankdir=LR;
+  graph [splines=ortho, fontname="Helvetica", fontsize=20,
+         label="pocketwire — prompt + approval round trip", labelloc=t];
+  node [fontname="Helvetica", fontsize=13, shape=box, style="rounded,filled"];
+  edge [fontname="Helvetica", fontsize=11, penwidth=1.4];
+
+  subgraph cluster_mobile {
+    label="MOBILE"; fontcolor="#2563eb"; color="#93c5fd"; style="rounded,filled"; fillcolor="#eff6ff";
+    phone [label="Phone\nPWA + APK", fillcolor="#dbeafe", fontcolor="#1e3a8a"];
+  }
+  subgraph cluster_conn {
+    label="CONNECTION"; fontcolor="#d97706"; color="#fcd34d"; style="rounded,filled"; fillcolor="#fffbeb";
+    link [label="pair link + QR\nHTTP · SSE", fillcolor="#fef3c7", fontcolor="#78350f"];
+  }
+  subgraph cluster_lap {
+    label="LAPTOP"; fontcolor="#059669"; color="#6ee7b7"; style="rounded,filled"; fillcolor="#ecfdf5";
+    relay [label="Relay\nserver + core", fillcolor="#d1fae5", fontcolor="#064e3b"];
+    adapter [label="Adapter\nopencode ×N", fillcolor="#d1fae5", fontcolor="#064e3b"];
+    agent [label="Agent\nopencode serve", fillcolor="#e2e8f0", fontcolor="#0f172a"];
+  }
+
+  phone -> link [label="scan QR / pair", color="#f59e0b"];
+  link -> relay [label="SSE + HTTP", color="#10b981"];
+  relay -> adapter [label="route by agent", color="#10b981"];
+  adapter -> agent [dir=both, label="prompt_async / events", color="#10b981"];
+  phone -> relay [label="POST prompt", color="#f59e0b", style=dashed];
+}
